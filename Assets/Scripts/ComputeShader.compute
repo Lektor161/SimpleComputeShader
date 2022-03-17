@@ -1,0 +1,49 @@
+﻿#pragma kernel CSMain
+#pragma kernel Clear
+
+#define PI 3.14159265358979323846
+
+Texture2D<float> depth_texture;
+RWTexture2D<float4> result;
+RWStructuredBuffer<int> buffer;
+
+int width, height;
+float near, far;
+float cam_angle;
+float fragment_len;
+
+float depthToNormal(float depth)
+{
+    return 2 * near * far / (far + near + (far - near) * (2 * depth - 1));
+}
+
+float2 getAngle(uint2 id)
+{
+    return float2(
+        PI / 2 - cam_angle / 2 + cam_angle * id.x / width,
+        PI / 2 - cam_angle / 2 + cam_angle * id.y / height);
+}
+
+float getDistance(uint2 id)
+{
+    float2 angle = getAngle(id);
+    return abs(depthToNormal(depth_texture[id.xy]) / sin(angle.x) / sin(angle.y));
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= width || id.y >= height) return;
+    float dist = getDistance(id); 
+    int cnt = (int) dist / fragment_len;
+    InterlockedAdd(buffer[cnt * width + id.x], 1);
+    
+    //float val = exp(dist / 10);
+    //result[id.xy] = float4(val, val, val, 0);
+}
+
+[numthreads(8,8,1)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+    buffer[id.y * width + id.x] = 0;
+}
