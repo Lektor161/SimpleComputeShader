@@ -1,45 +1,42 @@
-﻿#pragma kernel CSMain
+﻿#pragma kernel Compute
 #pragma kernel Clear
+#pragma kernel GetTexture
 
-#define PI 3.14159265358979323846
+#define PI 3.14159265358979323846;
 
 Texture2D<float> depth_texture;
+Texture2D<float4> color_texture;
 RWTexture2D<float4> result;
-RWStructuredBuffer<int> buffer;
+RWStructuredBuffer<uint> buffer;
 
 int width, height;
 float near, far;
-float cam_angle;
+float2 cam_angle;
 float fragment_len;
+int fragment_num;
 
-float depthToNormal(float depth)
+float depthToNormal(const float depth)
 {
     return 2 * near * far / (far + near + (far - near) * (2 * depth - 1));
 }
 
-float2 getAngle(uint2 id)
-{
-    return float2(
-        PI / 2 - cam_angle / 2 + cam_angle * id.x / width,
-        PI / 2 - cam_angle / 2 + cam_angle * id.y / height);
-}
-
 float getDistance(uint2 id)
 {
-    float2 angle = getAngle(id);
-    return abs(depthToNormal(depth_texture[id.xy]) / sin(angle.x) / sin(angle.y));
+    return depthToNormal(depth_texture[id.xy]) * sqrt(
+        1.0 +
+        pow(tan(cam_angle.x / 2) * (2.0 * id.x - width) / width, 2) +
+        pow(tan(cam_angle.y / 2) * (2.0 * id.y - height) / height, 2)
+        );
 }
 
 [numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void Compute (uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= width || id.y >= height) return;
     float dist = getDistance(id); 
     int cnt = (int) dist / fragment_len;
-    InterlockedAdd(buffer[cnt * width + id.x], 1);
-    
-    //float val = exp(dist / 10);
-    //result[id.xy] = float4(val, val, val, 0);
+    float val = color_texture[id.xy] * (1000000000 / height);
+    InterlockedAdd(buffer[cnt * width + id.x], (uint) val);
 }
 
 [numthreads(8,8,1)]
@@ -47,3 +44,12 @@ void Clear (uint3 id : SV_DispatchThreadID)
 {
     buffer[id.y * width + id.x] = 0;
 }
+
+[numthreads(8,8,1)]
+void GetTexture (uint3 id : SV_DispatchThreadID)
+{
+    float val = 1.0 * buffer[id.x + id.y * width] / (1000000000 / height) / height * fragment_num;
+    result[id.xy] = float4(val, val, val, 0);
+}
+
+
