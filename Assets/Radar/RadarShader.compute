@@ -9,8 +9,9 @@ Texture2D<float> depth_texture;
 RWTexture2D<float4> result_texture;
 RWStructuredBuffer<uint> buffer;
 
-float near, far;
+float color_norm_const;
 float2 cam_angle;
+float near, far;
 float cur_angle;
 int cam_width, cam_height;
 int texture_width, texture_height;
@@ -49,7 +50,7 @@ float get_color(float angle, const int fragment_id)
     int angle_id = tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
     angle_id += cam_width / 2;
     
-    return 0.1 * buffer[fragment_id * cam_width + angle_id] /  (1000000000.0 / cam_height);
+    return color_norm_const * buffer[fragment_id * cam_width + angle_id] /  (1000000000.0 / cam_height);
 }
 
 float get_angle(const float x, const float y)

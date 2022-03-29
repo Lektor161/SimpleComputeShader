@@ -608,6 +608,8 @@ MonoBehaviour:
   cam: {fileID: 1762875267}
   radar: {fileID: 563674571}
   shader: {fileID: 7200000, guid: 04ef25c8d8db2c646b5c5603f6ca923e, type: 3}
+  fragmentLength: 1
+  colorNormConst: 1
 --- !u!4 &1260422283
 Transform:
   m_ObjectHideFlags: 0
