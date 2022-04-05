@@ -10,7 +10,12 @@ namespace Radar
         public Camera colorCam;
         [SerializeField]
         public Camera depthCam;
+
         [SerializeField]
+        public float cameraHorizontalAngle = 20;
+        [SerializeField]
+        public float cameraVerticalAngle = 60;
+        
         public GameObject radar;
         [SerializeField]
         public ComputeShader shader;
@@ -49,12 +54,22 @@ namespace Radar
             _clearBufferKernelID = shader.FindKernel("clear_buffer");
             _blurKernelID = shader.FindKernel("blur");
         
+            print(depthCam.fieldOfView);
             _camNear = depthCam.nearClipPlane;
             _camFar = depthCam.farClipPlane;
             _camWidth = depthCam.pixelWidth;
             _camHeight = depthCam.pixelHeight;
-            _verAngle = depthCam.fieldOfView * Mathf.Deg2Rad;
-            _horAngle = 2 * Mathf.Atan(Mathf.Tan(_verAngle * 0.5f) * depthCam.aspect);
+
+            _verAngle = cameraVerticalAngle * Mathf.Deg2Rad;
+            _horAngle = cameraHorizontalAngle * Mathf.Deg2Rad;
+            depthCam.fieldOfView = cameraVerticalAngle;
+            depthCam.aspect = Mathf.Tan(_horAngle / 2) / Mathf.Tan(_verAngle / 2);
+            colorCam.fieldOfView = cameraVerticalAngle;
+            colorCam.aspect = Mathf.Tan(_horAngle / 2) / Mathf.Tan(_verAngle / 2);
+            
+            
+            //_verAngle = depthCam.fieldOfView * Mathf.Deg2Rad;
+            //_horAngle = 2 * Mathf.Atan(Mathf.Tan(_verAngle * 0.5f) * depthCam.aspect);
 
             _fragmentNum = textureHeight;
 
@@ -99,8 +114,7 @@ namespace Radar
         }
 
         void FixedUpdate()
-        { 
-            print("hh");
+        {
             var angles = _horAngle / 2 / Mathf.PI * textureWidth;
             Dispatch(shader, _generateBufferKernelID, _camWidth, _camHeight);
             Dispatch(shader, _generateTextureKernelID, (int) angles, textureHeight);
