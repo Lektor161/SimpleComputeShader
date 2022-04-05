@@ -56,7 +56,7 @@ namespace Radar
             _verAngle = depthCam.fieldOfView * Mathf.Deg2Rad;
             _horAngle = 2 * Mathf.Atan(Mathf.Tan(_verAngle * 0.5f) * depthCam.aspect);
 
-            _fragmentNum = textureWidth;
+            _fragmentNum = textureHeight;
 
             _fragmentLength = _camFar / _fragmentNum *
                 Mathf.Sqrt(1 + Mathf.Pow(Mathf.Tan(_horAngle / 2), 2) + 
@@ -105,10 +105,10 @@ namespace Radar
             Dispatch(shader, _generateBufferKernelID, _camWidth, _camHeight);
             Dispatch(shader, _generateTextureKernelID, (int) angles, textureHeight);
             Dispatch(shader, _blurKernelID, (int) angles, textureHeight);
-            Dispatch(shader, _clearBufferKernelID, _camWidth, _fragmentNum); 
+            Dispatch(shader, _clearBufferKernelID, _camWidth, textureHeight); 
             
-            cams.transform.Rotate(0, 1f, 0);
-            _curAngle += Mathf.Deg2Rad;
+            cams.transform.Rotate(0, _horAngle / 2 * Mathf.Rad2Deg, 0);
+            _curAngle += _horAngle / 2;
             shader.SetFloat("cur_angle", _curAngle % (2 * Mathf.PI));
             
             //radar.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _radarTexture);

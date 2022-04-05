@@ -59,8 +59,10 @@ void generate_texture (uint3 id : SV_DispatchThreadID)
     float pi = PI;
     float angle = 1.0 * id.x / texture_width * 2 * pi;
     float absolute_angle = (angle + cur_angle) % (2 * pi);
-    int x = (absolute_angle / 2 / pi * texture_width) % texture_width;
-    float green_val = angle / cam_angle.x / 3;
+    int x = (id.x + cur_angle / 2 / pi * texture_width) % texture_width;
+
+    //float green_val = angle / cam_angle.x / 3;
+    float green_val = 0.3;
     result_texture[int2(x, id.y)] = float4(get_color(angle, id.y), green_val, 0, 0);
 }
 
