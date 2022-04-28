@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ScreenMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 6a8c5c33faff29343a5ab805054e2a98,
+  m_Shader: {fileID: -6465566751694194690, guid: e519cbf46994ec449bd3d13eaa659a04,
     type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
@@ -23,6 +23,10 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _Texture:
+        m_Texture: {fileID: 2800000, guid: a8aeb57d30ac833468ed72320a338ce3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture2DAsset_8F93CF02_Out_0:
         m_Texture: {fileID: 2800000, guid: a8aeb57d30ac833468ed72320a338ce3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
