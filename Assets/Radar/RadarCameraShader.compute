@@ -44,20 +44,7 @@ float get_value_for_buffer(const uint3 id)
     return color_texture[id.xy].x  * (1000000000.0 / cam_height);
 }
 
-float get_color(const float angle, const uint fragment_id)
-{
-    if (angle > cam_angle.x)
-    {
-        return 0.0;
-    }
-    
-    int angle_id = tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
-    angle_id += cam_width / 2;
-    
-    return color_norm_const * buffer[uint2(angle_id, fragment_id)] / (1000000000.0 / cam_height);
-}
-
-float get_color2(const float angle, float y)
+float get_color(const float angle, float y)
 {
     if (angle > cam_angle.x)
     {
@@ -72,8 +59,6 @@ float get_color2(const float angle, float y)
     int y2 = y1 + 1;
     const float val = (y - y1) * buffer[uint2(angle_id, y1)] + (y2 - y) * buffer[uint2(angle_id, y2)];
     return color_norm_const * buffer[uint2(angle_id, y1)] / (1000000000.0 / cam_height);
-    
-    //return color_norm_const * buffer[uint2(angle_id, fragment_id)] / (1000000000.0 / cam_height);
 }
 
 [numthreads(8,8,1)]
@@ -83,8 +68,7 @@ void generate_texture (uint3 id : SV_DispatchThreadID)
     float angle = 1.0 * id.x / texture_width * 2 * pi;
     int x = (x_shift + id.x) % texture_width;
     float green_val = 0.3;
-    //result_texture[int2(x, id.y)] = float4(get_color(angle, id.y), green_val, 0, 0);
-    result_texture[uint2(x, id.y)] = float4(get_color2(angle, 1.0 * id.y / texture_height), green_val, 0, 0);
+    result_texture[uint2(x, id.y)] = float4(get_color(angle, 1.0 * id.y / texture_height), green_val, 0, 0);
 }
 
 bool check(uint3 id)
