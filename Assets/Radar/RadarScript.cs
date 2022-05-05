@@ -75,7 +75,7 @@ namespace Radar
             
             _camWidth = depthCam.pixelWidth;
             _camHeight = depthCam.pixelHeight;
-
+            
             _colorTexture = CreateTexture(_camWidth, _camHeight, 0, RenderTextureFormat.ARGBFloat, false);
             _depthTexture = CreateTexture(_camWidth, _camHeight, 24, RenderTextureFormat.Depth, false);
             _radarTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.ARGBFloat, true);
@@ -95,7 +95,6 @@ namespace Radar
             shader.SetInt("cam_height", _camHeight);
             shader.SetInt("texture_width", textureWidth);
             shader.SetInt("texture_height", textureHeight);
-            //shader.SetFloat("cur_angle", 0);
             shader.SetInt("x_shift", 0);
             
             shader.SetTexture(_blurKernelID, "result_texture", _radarTexture);
@@ -107,7 +106,6 @@ namespace Radar
         void FixedUpdate()
         {
             if (!SpinCamera()) return;
-            //var angles = cameraHorizontalAngle / 360 * textureWidth;
             Dispatch(shader, _generateBufferKernelID, _camWidth, _camHeight);
             var xWidth = textureWidth / _sectionCount / 8 * 8;
             shader.SetInt("x_shift", xWidth * _curSection);
@@ -115,15 +113,10 @@ namespace Radar
             {
                 xWidth = textureWidth - (_sectionCount - 1) * xWidth;
             }
-            Dispatch(shader, _generateTextureKernelID, xWidth, textureHeight);   
-            
+            Dispatch(shader, _generateTextureKernelID, xWidth, textureHeight);
 
-            //Dispatch(shader, _blurKernelID, (int) angles, textureHeight);
             Dispatch(shader, _clearBufferKernelID, _camWidth, textureHeight);  
             radar.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _radarTexture);
-            print("width: " + textureWidth);
-            print("count: " + _sectionCount);
-            print("width/count: " + textureWidth / _sectionCount);
         }
         
         private bool SpinCamera()
@@ -156,7 +149,6 @@ namespace Radar
         
         public void OnValidate()
         {
-            //print(Time.deltaTime);
             cameraRotationSpeed = Mathf.Min(cameraRotationSpeed, cameraHorizontalAngle / Time.deltaTime);
 
             depthCam.nearClipPlane = cameraNear;
@@ -180,15 +172,12 @@ namespace Radar
                                          Mathf.Pow(Mathf.Tan(verAngle / 2), 2));
             shader.SetInt("fragment_num", bufferHeight);
             shader.SetFloat("fragment_length", Mathf.Sqrt(_fragmentLength));
-            print("fragLen: " + _fragmentLength);
-            print("fragLen: " + _fragmentLength);
 
             
             shader.SetFloat("near", cameraNear);
             shader.SetFloat("far", cameraFar);
             shader.SetInt("fragment_count", bufferHeight);
             
-            //_sectionCount = (int) Math.Ceiling(360.0 / cameraHorizontalAngle);
             _sectionCount = 1;
             while (_sectionCount < 32 && 360f / _sectionCount > cameraHorizontalAngle)
             {
@@ -197,11 +186,14 @@ namespace Radar
             shader.SetInt("x_width", textureWidth / _sectionCount);
             
             shader.SetFloat("delta", delta);
-        }
-        
-        private void OnDestroy()
-        {
-            //_buffer.Dispose();
+
+            if (_bufferTexture != null && _bufferTexture.height != bufferHeight)
+            {
+                _bufferTexture = CreateTexture(_camWidth,bufferHeight, 0, RenderTextureFormat.RInt, true);
+                shader.SetTexture(_generateBufferKernelID, "buffer", _bufferTexture);
+                shader.SetTexture(_generateTextureKernelID, "buffer", _bufferTexture);
+                shader.SetTexture(_clearBufferKernelID, "buffer", _bufferTexture);
+            }
         }
     }
 }
