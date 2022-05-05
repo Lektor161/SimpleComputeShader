@@ -74,17 +74,22 @@ void generate_texture (uint3 id : SV_DispatchThreadID)
 bool check(uint3 id)
 {
     if (id.y < 1) return false;
-    return abs(color_texture[id.xy].y - color_texture[uint2(id.x, id.y - 1)].y) < 1.0 / 10000;
+    return abs(color_texture[id.xy].y - color_texture[uint2(id.x, id.y - 1)].y) < 1.0 / 1000;
 }
 
 [numthreads(8,8,1)]
 void generate_buffer (uint3 id : SV_DispatchThreadID)
 {
+    //if (id.y == cam_height)
+    //{
+    //    buffer[id.xy] = (1000000000.0 / cam_height);
+    //    return;
+    //}
     uint val = get_distance(id.xy) / fragment_length;
     //if (check(id))
     //{
-        //InterlockedAdd(buffer[id.xy], (1000000000.0 / cam_height));
-     //   InterlockedAdd(buffer[id.xy], get_value_for_buffer(id));
+    //    //InterlockedAdd(buffer[id.xy], (1000000000.0 / cam_height));
+    //    InterlockedAdd(buffer[id.xy], get_value_for_buffer(id));
     //}
     //return;
     
@@ -93,6 +98,7 @@ void generate_buffer (uint3 id : SV_DispatchThreadID)
         uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
         uint min_val = min(val, val2);
         uint max_val = max(val, val2);
+        if (max_val > min_val + texture_height / 100) return;
         for (uint t = min_val + 1; t <= max_val; t++)
         {
             InterlockedAdd(buffer[uint2(id.x, t)], get_value_for_buffer(id));
@@ -100,7 +106,6 @@ void generate_buffer (uint3 id : SV_DispatchThreadID)
         return;
     }
     InterlockedAdd(buffer[uint2(id.x, val)], get_value_for_buffer(id));
-
 }
 
 [numthreads(8,8,1)]

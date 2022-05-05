@@ -24,7 +24,7 @@ public class SetUnlitMaterial : MonoBehaviour
             if (!t.gameObject.TryGetComponent(out Renderer render)) continue;
             var material = new Material(shader);
             //material.SetColor("_Color", Color.red + Color.green / 255 * blueVal);
-            material.SetColor("_Color", Color.red + Color.green / 255 * (20 + random.Next(230)));
+            material.SetColor("_Color", Color.red + Color.green / 255 * (50 + random.Next(200)));
             render.material = material;
         }
     }
