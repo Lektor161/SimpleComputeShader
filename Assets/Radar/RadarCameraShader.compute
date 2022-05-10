@@ -17,13 +17,10 @@ float near, far;
 uint cam_width, cam_height;
 uint texture_width, texture_height;
 float fragment_length;
-uint fragment_count;
-//float cur_angle;
+uint buffer_height;
 uint x_shift;
 uint x_width;
 int2 blurxy;
-
-float delta;
 
 float depth_to_normal(const float depth)
 {
@@ -54,18 +51,18 @@ float get_color(const float angle, float y)
     int angle_id = tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
     angle_id += cam_width / 2;
 
-    y *= fragment_count;
+    y *= buffer_height;
     int y1 = y;
     int y2 = y1 + 1;
     const float val = (y - y1) * buffer[uint2(angle_id, y1)] + (y2 - y) * buffer[uint2(angle_id, y2)];
-    return color_norm_const * buffer[uint2(angle_id, y1)] / (1000000000.0 / cam_height);
+    return color_norm_const * val / (1000000000.0 / cam_height);
 }
 
 [numthreads(8,8,1)]
 void generate_texture (uint3 id : SV_DispatchThreadID)
 {
-    float pi = PI;
-    float angle = 1.0 * id.x / texture_width * 2 * pi;
+    const float pi = PI;
+    const float angle = 1.0 * id.x / texture_width * 2 * pi;
     int x = (x_shift + id.x) % texture_width;
     float green_val = 0.3;
     result_texture[uint2(x, id.y)] = float4(get_color(angle, 1.0 * id.y / texture_height), green_val, 0, 0);
@@ -80,19 +77,7 @@ bool check(uint3 id)
 [numthreads(8,8,1)]
 void generate_buffer (uint3 id : SV_DispatchThreadID)
 {
-    //if (id.y == cam_height)
-    //{
-    //    buffer[id.xy] = (1000000000.0 / cam_height);
-    //    return;
-    //}
     uint val = get_distance(id.xy) / fragment_length;
-    //if (check(id))
-    //{
-    //    //InterlockedAdd(buffer[id.xy], (1000000000.0 / cam_height));
-    //    InterlockedAdd(buffer[id.xy], get_value_for_buffer(id));
-    //}
-    //return;
-    
     if (check(id))
     {
         uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
@@ -124,18 +109,16 @@ float4 get_result(int2 id, const int dx, const int dy)
 [numthreads(8,8,1)]
 void blur(uint3 id: SV_DispatchThreadID)
 {
-    /*
-    const float pi = PI;
-    uint x = (id.x + cur_angle / 2 / pi * texture_width) % texture_width;
-    const int2 pixel_id = int2(x, id.y);
+    const int x = (x_shift + id.x) % texture_width;
+    const uint2 pixel_id = uint2(x, id.y);
     blur_texture[pixel_id] = 0;
     for (int dx = -blurxy.x; dx <= blurxy.x; dx++)
     {
         for (int dy = -blurxy.y; dy <= blurxy.y; dy++)
         {
-            blur_texture[pixel_id] += get_result(pixel_id, dx, dy);
+            uint nx = (x + dx + texture_width) % texture_width;
+            blur_texture[pixel_id] += result_texture[uint2(nx, id.y + dy)];
         }
     }
     blur_texture[pixel_id] /= (2 * blurxy.x + 1) * (2 * blurxy.y + 1);
-    */
 }
