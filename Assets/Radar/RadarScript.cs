@@ -110,7 +110,7 @@ namespace Radar
             }
             Dispatch(shader, _generateBufferKernelID, _camWidth, _camHeight);
             Dispatch(shader, _generateTextureKernelID, xWidth, textureHeight);
-            Dispatch(shader, _clearBufferKernelID, _camWidth, textureHeight); 
+            Dispatch(shader, _clearBufferKernelID, _camWidth, bufferHeight); 
             Dispatch(shader, _blurKernelID, xWidth, textureHeight);
             radar.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _blurTexture);
         }
