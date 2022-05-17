@@ -37,7 +37,7 @@ float get_distance(uint2 id)
 }
 
 float get_value_for_buffer(const uint3 id)
-{
+{ 
     return color_texture[id.xy].x  * (1000000000.0 / cam_height);
 }
 
@@ -50,8 +50,10 @@ float get_color(const float angle, float y)
     
     int angle_id = tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
     angle_id += cam_width / 2;
-
     y *= buffer_height;
+    
+    //return color_norm_const * buffer[uint2(angle_id, y)] / (1000000000.0 / cam_height);
+    
     int y1 = y;
     int y2 = y1 + 1;
     const float val = (y - y1) * buffer[uint2(angle_id, y1)] + (y2 - y) * buffer[uint2(angle_id, y2)];
@@ -83,7 +85,6 @@ void generate_buffer (uint3 id : SV_DispatchThreadID)
         uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
         uint min_val = min(val, val2);
         uint max_val = max(val, val2);
-        if (max_val > min_val + texture_height / 100) return;
         for (uint t = min_val + 1; t <= max_val; t++)
         {
             InterlockedAdd(buffer[uint2(id.x, t)], get_value_for_buffer(id));
