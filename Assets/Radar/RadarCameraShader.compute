@@ -1,26 +1,15 @@
 ﻿#pragma kernel generate_buffer
 #pragma kernel clear_buffer
-#pragma kernel generate_texture
-#pragma kernel blur
-
-#define PI 3.14159265358979323846;
 
 Texture2D<float4> color_texture;
 Texture2D<float> depth_texture;
-RWTexture2D<float4> result_texture;
-RWTexture2D<float4> blur_texture;
 RWTexture2D<uint> buffer;
 
-float color_norm_const;
 float2 cam_angle;
 float near, far;
 uint cam_width, cam_height;
-uint texture_width, texture_height;
 float fragment_length;
-uint buffer_height;
 uint x_shift;
-uint x_width;
-int2 blurxy;
 
 float depth_to_normal(const float depth)
 {
@@ -41,35 +30,6 @@ float get_value_for_buffer(const uint3 id)
     return color_texture[id.xy].x  * (1000000000.0 / cam_height);
 }
 
-float get_color(const float angle, float y)
-{
-    if (angle > cam_angle.x)
-    {
-        return 0.0;
-    }
-    
-    int angle_id = tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
-    angle_id += cam_width / 2;
-    y *= buffer_height;
-    
-    //return color_norm_const * buffer[uint2(angle_id, y)] / (1000000000.0 / cam_height);
-    
-    int y1 = y;
-    int y2 = y1 + 1;
-    const float val = (y - y1) * buffer[uint2(angle_id, y1)] + (y2 - y) * buffer[uint2(angle_id, y2)];
-    return color_norm_const * val / (1000000000.0 / cam_height);
-}
-
-[numthreads(8,8,1)]
-void generate_texture (uint3 id : SV_DispatchThreadID)
-{
-    const float pi = PI;
-    const float angle = 1.0 * id.x / texture_width * 2 * pi;
-    int x = (x_shift + id.x) % texture_width;
-    float green_val = 0.3;
-    result_texture[uint2(x, id.y)] = float4(get_color(angle, 1.0 * id.y / texture_height), green_val, 0, 0);
-}
-
 bool check(uint3 id)
 {
     if (id.y < 1) return false;
@@ -79,6 +39,7 @@ bool check(uint3 id)
 [numthreads(8,8,1)]
 void generate_buffer (uint3 id : SV_DispatchThreadID)
 {
+    uint x = x_shift + id.x;
     uint val = get_distance(id.xy) / fragment_length;
     if (check(id))
     {
@@ -87,39 +48,15 @@ void generate_buffer (uint3 id : SV_DispatchThreadID)
         uint max_val = max(val, val2);
         for (uint t = min_val + 1; t <= max_val; t++)
         {
-            InterlockedAdd(buffer[uint2(id.x, t)], get_value_for_buffer(id));
+            InterlockedAdd(buffer[uint2(x, t)], get_value_for_buffer(id));
         }
         return;
     }
-    InterlockedAdd(buffer[uint2(id.x, val)], get_value_for_buffer(id));
+    InterlockedAdd(buffer[uint2(x, val)], get_value_for_buffer(id));
 }
 
 [numthreads(8,8,1)]
 void clear_buffer(uint3 id: SV_DispatchThreadID)
 {
-    buffer[id.xy] = 0;
-}
-
-float4 get_result(int2 id, const int dx, const int dy) 
-{
-    uint x = (id.x + dx + texture_width) % texture_width;
-    uint y = max(0, min(texture_height - 1, id.y + dy));
-    return result_texture[uint2(x, y)];
-}
-
-[numthreads(8,8,1)]
-void blur(uint3 id: SV_DispatchThreadID)
-{
-    const int x = (x_shift + id.x) % texture_width;
-    const uint2 pixel_id = uint2(x, id.y);
-    blur_texture[pixel_id] = 0;
-    for (int dx = -blurxy.x; dx <= blurxy.x; dx++)
-    {
-        for (int dy = -blurxy.y; dy <= blurxy.y; dy++)
-        {
-            uint nx = (x + dx + texture_width) % texture_width;
-            blur_texture[pixel_id] += result_texture[uint2(nx, id.y + dy)];
-        }
-    }
-    blur_texture[pixel_id] /= (2 * blurxy.x + 1) * (2 * blurxy.y + 1);
+    buffer[uint2(x_shift + id.x, id.y)] = 0;
 }
