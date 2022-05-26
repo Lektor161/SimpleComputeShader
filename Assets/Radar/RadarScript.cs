@@ -94,9 +94,8 @@ namespace Radar
         private void FixedUpdate()
         {
             if (!SpinCamera()) return;
-            cameraShader.SetInt("x_shift", _camWidth * ((_curSection + 1) % _sectionCount));
-            textureShader.SetInt("x_shift", _camWidth * _curSection);
-
+            cameraShader.SetInt("x_shift", _camWidth * _curSection);
+            textureShader.SetInt("x_shift", _camWidth * ((_curSection + _sectionCount - 1) % _sectionCount));
             
             Dispatch(cameraShader, _clearBufferKernelID, _camWidth, _bufferHeight);
             Dispatch(cameraShader, _generateBufferKernelID, _camWidth, cameraHeight);
@@ -112,10 +111,11 @@ namespace Radar
         private bool SpinCamera()
         {
             _bufAngle += cameraRotationSpeed * Time.deltaTime;
+            _bufAngle %= 10000;
             if (_bufAngle * _sectionCount < 360f) return false;
             _bufAngle -= 360f / _sectionCount;
             _curSection = (_curSection + 1) % _sectionCount;
-            cams.transform.eulerAngles = new Vector3(0, (180f + 360f * _curSection) / _sectionCount);
+            cams.transform.eulerAngles = new Vector3(0, (180 + 360f * _curSection) / _sectionCount);
             colorCam.Render();
             depthCam.Render();
             return true;
@@ -139,8 +139,13 @@ namespace Radar
         
         public void OnValidate()
         {
+            _sectionCount = 1;
+            while (_sectionCount < 32 && 360f / _sectionCount > cameraHorizontalAngle)
+            {
+                _sectionCount *= 2;
+            }
+            cameraHorizontalAngle = 360f / _sectionCount;
             _bufferHeight = textureHeight;
-            cameraRotationSpeed = Mathf.Min(cameraRotationSpeed, cameraHorizontalAngle / Time.deltaTime);
 
             colorCam.nearClipPlane = depthCam.nearClipPlane = cameraNear;
             colorCam.farClipPlane = depthCam.farClipPlane = cameraFar;
@@ -164,14 +169,6 @@ namespace Radar
             
             cameraShader.SetFloat("near", cameraNear);
             cameraShader.SetFloat("far", cameraFar);
-            
-            var sectionCount = 1;
-            while (sectionCount < 32 && 360f / sectionCount > cameraHorizontalAngle)
-            {
-                sectionCount *= 2;
-            }
-
-            _sectionCount = sectionCount; 
             UpdateCamera();
 
             _outputBuffer?.Dispose();
