@@ -1,0 +1,13 @@
+﻿#pragma kernel buffer_to_texture
+
+Buffer<float> buffer;
+RWTexture2D<float> tex;
+
+uint width;
+uint x_shift;
+
+[numthreads(8,8,1)]
+void buffer_to_texture (uint3 id : SV_DispatchThreadID)
+{
+    tex[uint2(x_shift + id.x, id.y)] = buffer[id.y * width + id.x];
+}

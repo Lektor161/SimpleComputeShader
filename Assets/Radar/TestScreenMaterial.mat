@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ScreenMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: e5db404dd964e1d47b9088ce1b3cda74,
+  m_Name: TestScreenMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: e519cbf46994ec449bd3d13eaa659a04,
     type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4

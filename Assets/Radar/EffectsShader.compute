@@ -1,0 +1,45 @@
+﻿#pragma kernel blur
+
+#define PI 3.14159265358979323846;
+
+RWTexture2D<float> radar_texture;
+RWTexture2D<float> blur_texture;
+RWBuffer<float> output_buffer;
+
+uint cam_width;
+uint texture_width;
+uint x_shift;
+int2 blurxy;
+uint random_seed;
+float max_random_value;
+
+// Input: It uses texture coords as the random number seed.
+// Output: Random number: [0,1), that is between 0.0 and 0.999999... inclusive.
+float random(float2 p)
+{
+    // We need irrationals for pseudo randomness.
+    // Most (all?) known transcendental numbers will (generally) work.
+    const float2 r = float2(
+      23.1406926327792690,  // e^pi (Gelfond's constant)
+       2.6651441426902251); // 2^sqrt(2) (Gelfond–Schneider constant)
+    return frac( cos( fmod( 1.0 * random_seed, 1e-7 + 256. * dot(p,r) ) ) );  
+}
+
+[numthreads(8,8,1)]
+void blur(uint3 id: SV_DispatchThreadID)
+{
+    const int x = (x_shift + id.x) % texture_width;
+    const uint2 pixel_id = uint2(x, id.y);
+    blur_texture[pixel_id] = 0;
+    for (int dx = -blurxy.x; dx <= blurxy.x; dx++)
+    {
+        for (int dy = -blurxy.y; dy <= blurxy.y; dy++)
+        {
+            uint nx = (x + dx + texture_width) % texture_width;
+            blur_texture[pixel_id] += radar_texture[uint2(nx, id.y + dy)];
+        }
+    }
+    blur_texture[pixel_id] /= (2 * blurxy.x + 1) * (2 * blurxy.y + 1);
+    blur_texture[pixel_id] += max_random_value * random(float2(id.x + 1., id.y + 1.));
+    output_buffer[id.y * cam_width + id.x] = blur_texture[pixel_id];
+}

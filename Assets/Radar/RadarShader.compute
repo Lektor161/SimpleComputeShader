@@ -1,0 +1,87 @@
+﻿#pragma kernel generate_buffer
+#pragma kernel clear_buffer
+#pragma kernel generate_texture
+
+#define PI 3.14159265358979323846;
+
+
+Texture2D<float4> color_texture;
+Texture2D<float> depth_texture;
+RWTexture2D<uint> buffer;
+
+float2 cam_angle;
+float near, far;
+uint cam_width, cam_height;
+float fragment_length;
+uint x_shift;
+
+RWTexture2D<float> radar_texture;
+uint texture_width, texture_height;
+uint buffer_height;
+float color_norm_const;
+
+
+float depth_to_normal(const float depth)
+{
+    return 2 * near * far / (far + near + (far - near) * (2 * depth - 1));
+}
+
+float get_distance(uint2 id)
+{
+    return depth_to_normal(depth_texture[id.xy]) * sqrt(
+        1.0 +
+        pow(tan(cam_angle.x / 2) * (2.0 * id.x - cam_width) / cam_width, 2) +
+        pow(tan(cam_angle.y / 2) * (2.0 * id.y - cam_height) / cam_height, 2)
+        );
+}
+
+float get_value_for_buffer(const uint3 id)
+{ 
+    return color_texture[id.xy].x  * (1000000000.0 / cam_height);
+}
+
+bool check(uint3 id)
+{
+    if (id.y < 1) return false;
+    return abs(color_texture[id.xy].y - color_texture[uint2(id.x, id.y - 1)].y) < 1.0 / 1000;
+}
+
+[numthreads(8,8,1)]
+void generate_buffer (uint3 id : SV_DispatchThreadID)
+{
+    uint x = x_shift + id.x;
+    uint val = get_distance(id.xy) / fragment_length;
+    if (check(id))
+    {
+        uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
+        uint min_val = min(val, val2);
+        uint max_val = max(val, val2);
+        for (uint t = min_val + 1; t <= max_val; t++)
+        {
+            InterlockedAdd(buffer[uint2(x, t)], get_value_for_buffer(id));
+        }
+        return;
+    }
+    InterlockedAdd(buffer[uint2(x, val)], get_value_for_buffer(id));
+}
+
+[numthreads(8,8,1)]
+void clear_buffer(uint3 id: SV_DispatchThreadID)
+{
+    buffer[uint2(x_shift + id.x, id.y)] = 0;
+}
+
+[numthreads(8,8,1)]
+void generate_texture(uint3 id: SV_DispatchThreadID)
+{
+    const float pi = PI;
+    const float angle = 1.0 * id.x / texture_width * 2 * pi;
+    const int angle_id = cam_width / 2 + tan(angle - cam_angle.x / 2) / tan(cam_angle.x / 2) / 2 * cam_width;
+    const float y = 1.0 * id.y / texture_height * buffer_height;
+
+    int y1 = y;
+    int y2 = y1 + 1;
+    uint x = (x_shift + angle_id + texture_width) % texture_width;
+    const float val = (y - y1) * buffer[uint2(x, y1)] + (y2 - y) * buffer[uint2(x, y2)];
+    radar_texture[uint2(x_shift + id.x, id.y)] = color_norm_const * val / (1000000000.0 / cam_height);
+}
