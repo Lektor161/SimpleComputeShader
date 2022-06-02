@@ -82,13 +82,9 @@ namespace Radar
             _blurKernelID = effectsShader.FindKernel("blur");
             _bufferToTextureKernelID = bufferToTextureShader.FindKernel("buffer_to_texture");
             
-            _bufferTexture = CreateTexture(textureWidth, _bufferHeight, 0, RenderTextureFormat.RInt, true);
             _radarTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
             _blurTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
-
-            radarShader.SetTexture(_generateBufferKernelID, "buffer", _bufferTexture);
-            radarShader.SetTexture(_clearBufferKernelID, "buffer", _bufferTexture);
-            radarShader.SetTexture(_generateTextureKernelID, "buffer", _bufferTexture);
+            
             radarShader.SetTexture(_generateTextureKernelID, "radar_texture", _radarTexture);
             
             effectsShader.SetTexture(_blurKernelID, "radar_texture", _radarTexture);
@@ -198,6 +194,11 @@ namespace Radar
             bufferToTextureShader.SetBuffer(_bufferToTextureKernelID, "buffer", _outputBuffer);
             bufferToTextureShader.SetTexture(_bufferToTextureKernelID, "tex", _outputTexture);
             bufferToTextureShader.SetInt("width", _camWidth);
+
+            _bufferTexture = CreateTexture(textureWidth, _bufferHeight, 0, RenderTextureFormat.RInt, true);
+            radarShader.SetTexture(_generateBufferKernelID, "buffer", _bufferTexture);
+            radarShader.SetTexture(_clearBufferKernelID, "buffer", _bufferTexture);
+            radarShader.SetTexture(_generateTextureKernelID, "buffer", _bufferTexture);
         }
 
         private void UpdateCamera()
