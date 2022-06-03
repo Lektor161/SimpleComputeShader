@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -56,6 +57,7 @@ namespace Radar
         private RenderTexture _radarTexture;
         private RenderTexture _blurTexture;
         private ComputeBuffer _outputBuffer;
+        private ComputeBuffer _inputBuffer;
         private RenderTexture _outputTexture;
 
         private Random _random = new Random();
@@ -106,7 +108,6 @@ namespace Radar
             radarShader.SetInt("x_shift", _camWidth * _curSection);
             effectsShader.SetInt("x_shift", _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
             effectsShader.SetInt("random_seed", _random.Next());
-            bufferToTextureShader.SetInt("x_shift", _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
             
             Dispatch(radarShader, _clearBufferKernelID, _camWidth, _bufferHeight);
             Dispatch(radarShader, _generateBufferKernelID, _camWidth, cameraHeight);
@@ -114,11 +115,16 @@ namespace Radar
             Dispatch(effectsShader, _blurKernelID, _camWidth, textureHeight);
             radar.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _blurTexture);
 
+            ExtractData();
+        }
+
+        private void ExtractData()
+        {
             var outArray = new float[_camWidth * textureHeight];
             _outputBuffer.GetData(outArray);
-
+            _inputBuffer.SetData(outArray);
+            bufferToTextureShader.SetInt("x_shift", _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
             Dispatch(bufferToTextureShader, _bufferToTextureKernelID, _camWidth, textureHeight);
-            //outputObject.GetComponent<MeshRenderer>().material.mainTexture = _radarTexture;
             outputObject.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _outputTexture);
         }
         
@@ -184,21 +190,29 @@ namespace Radar
             radarShader.SetFloat("near", cameraNear);
             radarShader.SetFloat("far", cameraFar);
             UpdateCamera();
-
-            _outputBuffer?.Dispose();
-            _outputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
-            effectsShader.SetBuffer(_blurKernelID, "output_buffer", _outputBuffer);
             
             _outputTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
             _outputTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
-            bufferToTextureShader.SetBuffer(_bufferToTextureKernelID, "buffer", _outputBuffer);
-            bufferToTextureShader.SetTexture(_bufferToTextureKernelID, "tex", _outputTexture);
-            bufferToTextureShader.SetInt("width", _camWidth);
 
             _bufferTexture = CreateTexture(textureWidth, _bufferHeight, 0, RenderTextureFormat.RInt, true);
             radarShader.SetTexture(_generateBufferKernelID, "buffer", _bufferTexture);
             radarShader.SetTexture(_clearBufferKernelID, "buffer", _bufferTexture);
             radarShader.SetTexture(_generateTextureKernelID, "buffer", _bufferTexture);
+            
+            UpdateBuffers();
+        }
+
+        private void UpdateBuffers()
+        {
+            _outputBuffer?.Dispose();
+            _outputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
+            _inputBuffer?.Dispose();
+            _inputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
+            
+            effectsShader.SetBuffer(_blurKernelID, "output_buffer", _outputBuffer);
+            bufferToTextureShader.SetBuffer(_bufferToTextureKernelID, "buffer", _inputBuffer);
+            bufferToTextureShader.SetTexture(_bufferToTextureKernelID, "tex", _outputTexture);
+            bufferToTextureShader.SetInt("width", _camWidth);
         }
 
         private void UpdateCamera()
@@ -220,9 +234,10 @@ namespace Radar
             effectsShader.SetInt("cam_width", _camWidth);
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             _outputBuffer.Dispose();
+            _inputBuffer.Dispose();
         }
     }
 }
