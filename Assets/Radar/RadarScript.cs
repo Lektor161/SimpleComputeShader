@@ -97,8 +97,6 @@ namespace Radar
             radarShader.SetInt("x_shift", 0);
 
             effectsShader.SetInt("texture_width", textureWidth);
-            effectsShader.SetInts("blurxy", blurAngle, blurRadius);
-            
             OnValidate();
         }
 
@@ -159,6 +157,7 @@ namespace Radar
         
         public void OnValidate()
         {
+            effectsShader.SetInts("blurxy", blurAngle, blurRadius);
             _sectionCount = 1;
             while (_sectionCount < 32 && 360f / _sectionCount > cameraHorizontalAngle)
             {
@@ -175,7 +174,7 @@ namespace Radar
             var verAngle = cameraVerticalAngle * Mathf.Deg2Rad;
             colorCam.aspect = depthCam.aspect = Mathf.Tan(horAngle / 2) / Mathf.Tan(verAngle / 2);
 
-            maxRandomValue = Mathf.Min(maxRandomValue, 1f);
+            //maxRandomValue = Mathf.Min(maxRandomValue, 1f);
             effectsShader.SetFloat("max_random_value", maxRandomValue);
             radarShader.SetFloat("color_norm_const", colorNormConst);
             radarShader.SetFloats("cam_angle", horAngle, verAngle);
