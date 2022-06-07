@@ -49,7 +49,7 @@ namespace Radar
         [SerializeField]
         public float colorNormConst;
         [SerializeField] 
-        public float maxRandomValue = 0.1f;
+        public float noiceConst = 0.1f;
         
         private RenderTexture _colorTexture;
         private RenderTexture _depthTexture;
@@ -174,8 +174,7 @@ namespace Radar
             var verAngle = cameraVerticalAngle * Mathf.Deg2Rad;
             colorCam.aspect = depthCam.aspect = Mathf.Tan(horAngle / 2) / Mathf.Tan(verAngle / 2);
 
-            //maxRandomValue = Mathf.Min(maxRandomValue, 1f);
-            effectsShader.SetFloat("max_random_value", maxRandomValue);
+            effectsShader.SetFloat("max_random_value", noiceConst);
             radarShader.SetFloat("color_norm_const", colorNormConst);
             radarShader.SetFloats("cam_angle", horAngle, verAngle);
             
