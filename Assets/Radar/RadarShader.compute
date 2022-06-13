@@ -2,10 +2,7 @@
 #pragma kernel clear_buffer
 #pragma kernel generate_texture
 
-//#include "UnityCG.cginc"
-
 #define PI 3.14159265358979323846;
-
 
 Texture2D<float4> color_texture;
 Texture2D<float> depth_texture;
@@ -25,13 +22,10 @@ float color_norm_const;
 
 float depth_to_normal(const float depth)
 {
-    float x = -1 + far / near;
-    float z = x / far;
-    float w = 1 / far;
+    const float x = -1 + far / near;
+    const float z = x / far;
+    const float w = 1 / far;
     return 1.0 / (z * depth + w);
-     
-    //return LinearEyeDepth(depth);
-    //return 2 * near * far / (far + near + (far - near) * (2 * depth - 1));
 }
 
 float get_distance(uint2 id)
@@ -60,9 +54,9 @@ void generate_buffer (uint3 id : SV_DispatchThreadID)
     uint val = get_distance(id.xy) / fragment_length;
     if (check(id))
     {
-        uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
-        uint min_val = min(val, val2);
-        uint max_val = max(val, val2);
+        const uint val2 = get_distance(uint2(id.x, id.y - 1)) / fragment_length;
+        const uint min_val = min(val, val2);
+        const uint max_val = max(val, val2);
         for (uint t = min_val + 1; t <= max_val; t++)
         {
             InterlockedAdd(buffer[uint2(id.x, t)], get_value_for_buffer(id));
