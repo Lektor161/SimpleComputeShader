@@ -68,6 +68,8 @@ namespace Radar
         
         private float _bufAngle;
         private int _sectionCount, _curSection;
+
+        private int _shiftID;
         
         private int _generateBufferKernelID;
         private int _clearBufferKernelID;
@@ -102,21 +104,21 @@ namespace Radar
         
         void Start()
         {
+            _shiftID = Shader.PropertyToID("x_shift");
             _radarTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
             _blurTexture = CreateTexture(textureWidth, textureHeight, 0, RenderTextureFormat.RFloat, true);
             
             RadarShaderStart();
             EffectsShaderStart();
             BufferToTextureShaderStart();
-            
             OnValidate();
         }
 
         private void FixedUpdate()
         {
             if (!SpinCamera()) return;
-            radarShader.SetInt("x_shift", _camWidth * _curSection);
-            effectsShader.SetInt("x_shift", _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
+            radarShader.SetInt(_shiftID, _camWidth * _curSection);
+            effectsShader.SetInt(_shiftID, _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
             effectsShader.SetInt("random_seed", _random.Next());
             
             Dispatch(radarShader, _clearBufferKernelID, _camWidth, _bufferHeight);
@@ -133,7 +135,7 @@ namespace Radar
             var outArray = new float[_camWidth * textureHeight];
             _outputBuffer.GetData(outArray);
             _inputBuffer.SetData(outArray);
-            bufferToTextureShader.SetInt("x_shift", _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
+            bufferToTextureShader.SetInt(_shiftID, _camWidth * ((_curSection - 1 + _sectionCount) % _sectionCount));
             Dispatch(bufferToTextureShader, _bufferToTextureKernelID, _camWidth, textureHeight);
             outputObject.GetComponent<MeshRenderer>().material.SetTexture("_Texture", _outputTexture);
         }
@@ -197,9 +199,11 @@ namespace Radar
         private void BuffersOnValidate()
         {
             _outputBuffer?.Dispose();
-            _outputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
             _inputBuffer?.Dispose();
+            _outputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
             _inputBuffer = new ComputeBuffer(_camWidth * textureHeight, sizeof(float));
+            GC.SuppressFinalize(_outputBuffer);
+            GC.SuppressFinalize(_inputBuffer);
             
             effectsShader.SetBuffer(_blurKernelID, "output_buffer", _outputBuffer);
             bufferToTextureShader.SetBuffer(_bufferToTextureKernelID, "buffer", _inputBuffer);

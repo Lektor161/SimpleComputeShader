@@ -18,13 +18,15 @@ public class SetUnlitMaterial : MonoBehaviour
         //var blueVal = 50;
         foreach (var t in ts)
         {
-            //blueVal = (blueVal + 1) % 256;
-            //blueVal = Math.Max(blueVal, 50);
             if (t == null || t.gameObject == null) continue;
             if (!t.gameObject.TryGetComponent(out Renderer render)) continue;
             var material = new Material(shader);
-            //material.SetColor("_Color", Color.red + Color.green / 255 * blueVal);
-            material.SetColor("_Color", Color.red + Color.green / 255 * (50 + random.Next(200)));
+            material.SetColor(
+                "_Color", 
+                Color.red + 
+                Color.green / 255 * (10 + random.Next(245)) + 
+                Color.blue / 255 * (10 + random.Next(245))
+                );
             render.material = material;
         }
     }

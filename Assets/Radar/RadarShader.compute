@@ -45,7 +45,8 @@ float get_value_for_buffer(const uint3 id)
 bool check(uint3 id)
 {
     if (id.y < 1) return false;
-    return abs(color_texture[id.xy].y - color_texture[uint2(id.x, id.y - 1)].y) < 1.0 / 1000;
+    return abs(color_texture[id.xy].y - color_texture[uint2(id.x, id.y - 1)].y) < 1.0 / 1000 &&
+        abs(color_texture[id.xy].z - color_texture[uint2(id.x, id.y - 1)].z) < 1.0 / 1000;
 }
 
 [numthreads(8,8,1)]
